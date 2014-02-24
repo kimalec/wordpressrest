@@ -1,0 +1,27 @@
+{
+  "name": "wordpressrest",
+  "version": "0.0.1",
+  "description": "wrapper around wordpress rest api",
+  "main": "./lib/wordpressrest",
+  "directories": {
+    "example": "example"
+  },
+  "dependencies": {
+    "request": "*",
+    "duplexbufferstream": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mohan43u/wordpressrest"
+  },
+  "keywords": [
+    "wordpress",
+    "rest"
+  ],
+  "author": "Mohan R <mohan43u@gmail.com> (http://mohan43u.wordpress.com)",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/mohan43u/wordpressrest/issues"
+  },
+  "homepage": "https://github.com/mohan43u/wordpressrest"
+}
