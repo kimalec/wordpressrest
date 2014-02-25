@@ -18,42 +18,18 @@ var wordpressrest = new WordPressRest({db:
 				       proxy: process.env['http_proxy']
 				      });
 
-var setup_apiresult_handler = function(req, res, apiresult, pathname) {
-    apiresult.on('finish', function(req, res, apiresult, pathname) {
-	var apiresultobj = JSON.parse(apiresult.read().toString());
-	if(apiresultobj.type == 'redirect') {
-	    res.writeHead(303, {
-		'Location': apiresultobj.location
-	    });
-	    res.end();
-	}
-	else if(apiresultobj.type == 'html') {
-	    res.end(apiresultobj.html);
-	}
-	else if(apiresultobj.type == 'json') {
-	    if(fs.existsSync(path.join(__dirname, 'views', pathname))) {
-		res.render(pathname, JSON.parse(apiresultobj.json));
-	    }
-	    else {
-		res.end(apiresultobj.json);
-	    }
-	}
-    }.bind(this, req, res, apiresult, pathname));
-}
-
 var server = http.createServer(function(req, res) {
     var pathname = url.parse(req.url).pathname;
-    var apireq = req;
     var apiresult = new DuplexBufferStream();
 
     console.log(pathname);
-    setup_apiresult_handler(req, res, apiresult, pathname);
+    apiresult.pipe(res);
 
     if(pathname.match("/wordpress/authorize$")) {
-	wordpressrest.authorize(apireq, apiresult);
+	wordpressrest.authorize(req, apiresult);
     }
     else if(pathname.match("/wordpress/authorized$")) {
-	wordpressrest.get_access_token(apireq, apiresult);
+	wordpressrest.get_access_token(req, apiresult);
     }
     else if(pathname.match("/wordpress")) {
 	pathname = pathname.substring(pathname.indexOf('/', 1));
@@ -61,17 +37,17 @@ var server = http.createServer(function(req, res) {
 	if(req.method == 'POST') {
 	    var data = new DuplexBufferStream();
 	    req.pipe(data);
-	    data.on('finish', function(data, apireq, apiresult, pathname) {
+	    data.on('finish', function(data, req, apiresult, pathname) {
 		options = querystring.parse(data.read().toString());
-		wordpressrest.verify(apireq, apiresult, pathname, options);
-	    }.bind(this, data, apireq, apiresult, pathname));
+		wordpressrest.verify(req, apiresult, pathname, options);
+	    }.bind(this, data, req, apiresult, pathname));
 	}
 	else {
 	    options = querystring.parse(url.parse(req.url).query);
-	    wordpressrest.verify(apireq, apiresult, pathname, options);
+	    wordpressrest.verify(req, apiresult, pathname, options);
 	}
     }
     else {
-	apiresult.end(JSON.stringify({'type': 'html', 'html': 'nothing here!!'}));
+	apiresult.end('nothing here!!');
     }
 }).listen(3000);
