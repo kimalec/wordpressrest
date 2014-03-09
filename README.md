@@ -16,4 +16,4 @@ A simple wrapper around wordpress REST api
 
 ### Example
 
-See example/wordpressresttest.js
+See https://github.com/mohan43u/wordpressrest/blob/master/example/wordpressresttest.js
