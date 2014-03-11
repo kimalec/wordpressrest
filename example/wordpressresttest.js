@@ -26,7 +26,7 @@ var server = http.createServer(function(req, res) {
 	    var apiresultbuf = apiresult.read();
 	    wordpress_access_token = JSON.parse(apiresultbuf.toString()).wordpress_access_token;
 	    if(wordpress_access_token) {
-		fs.writeFileSync(dbfilename, JSON.stringify({'wordpress_access_token': wordpress_access_token}));
+		fs.writeFile(dbfilename, JSON.stringify({'wordpress_access_token': wordpress_access_token}));
 		res.end(JSON.stringify({'oauth2': 'authorized'}));
 	    }
 	    else {
