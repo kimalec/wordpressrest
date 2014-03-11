@@ -7,9 +7,9 @@ var querystring = require('querystring');
 var WordPressRest = require('../lib/wordpressrest');
 var DuplexBufferStream = require('duplexbufferstream');
 
-var dbfilename = process.env['HOME'] + '/.wordpressrest.js.db';
-try { var wordpress_access_token = JSON.parse(fs.readFileSync(dbfilename)).wordpress_access_token; } catch(e) {}
-var wordpressrest = new WordPressRest({'wordpress_access_token': wordpress_access_token});
+var dbfilename = 'wordpressrest.js.db';
+try { var wordpress_tokens = JSON.parse(fs.readFileSync(dbfilename)).wordpress_tokens; } catch(e) {}
+var wordpressrest = new WordPressRest({'wordpress_tokens': wordpress_tokens});
 
 var server = http.createServer(function(req, res) {
     var pathname = url.parse(req.url).pathname;
@@ -24,9 +24,9 @@ var server = http.createServer(function(req, res) {
     else if(pathname.match("/wordpress/authorized$")) {
 	apiresult.on('finish', function(res, apiresult) {
 	    var apiresultbuf = apiresult.read();
-	    wordpress_access_token = JSON.parse(apiresultbuf.toString()).wordpress_access_token;
-	    if(wordpress_access_token) {
-		fs.writeFileSync(dbfilename, JSON.stringify({'wordpress_access_token': wordpress_access_token}));
+	    var tokens = JSON.parse(apiresultbuf.toString()).wordpress_tokens;
+	    if(tokens) {
+		fs.writeFile(dbfilename, JSON.stringify({'wordpress_tokens': tokens}));
 		res.end(JSON.stringify({'oauth2': 'authorized'}));
 	    }
 	    else {
@@ -36,7 +36,7 @@ var server = http.createServer(function(req, res) {
 	wordpressrest.get_access_token(req, apiresult);
     }
     else if(pathname.match("/wordpress")) {
-	if(!wordpressrest.wordpress_access_token) {
+	if(!wordpressrest.wordpress_tokens) {
 	    var redirect_url = new url.Url();
 	    redirect_url.pathname = '/wordpress/authorize';
 	    res.writeHead(303, {
@@ -56,7 +56,7 @@ var server = http.createServer(function(req, res) {
 		}.bind(this, data, req, apiresult, pathname));
 	    }
 	    else {
-		options = querystring.parse(url.parse(req.url).query);
+		options = url.parse(req.url, true).query;
 		wordpressrest.call_wordpress(req, apiresult, pathname, options);
 	    }
 	}
