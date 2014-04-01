@@ -1,14 +1,13 @@
 {
   "name": "wordpressrest",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "wrapper around wordpress rest api",
   "main": "./lib/wordpressrest",
   "directories": {
     "example": "example"
   },
   "dependencies": {
-    "request": "*",
-    "duplexbufferstream": "*"
+    "tunnel": "*",
   },
   "repository": {
     "type": "git",

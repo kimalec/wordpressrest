@@ -1,11 +1,7 @@
 var fs = require('fs');
-var os = require('os');
 var url = require('url');
 var http = require('http');
-var path = require('path');
-var querystring = require('querystring');
 var WordPressRest = require('../lib/wordpressrest');
-var DuplexBufferStream = require('duplexbufferstream');
 
 var dbfilename = 'wordpressrest.js.db';
 try { var wordpress_tokens = JSON.parse(fs.readFileSync(dbfilename)).wordpress_tokens; } catch(e) {}
@@ -18,22 +14,38 @@ var server = http.createServer(function(req, res) {
     console.log(pathname);
 
     if(pathname.match("/wordpress/authorize$")) {
-	apiresult.pipe(res);
-	wordpressrest.authorize(req, apiresult);
+	wordpressrest.authorize(req, function(response){
+	    this.writeHead(response.statusCode, response.headers);
+	    response.pipe(this);
+	}.bind(res));
     }
     else if(pathname.match("/wordpress/authorized$")) {
-	apiresult.on('finish', function(res, apiresult) {
-	    var apiresultbuf = apiresult.read();
-	    var tokens = JSON.parse(apiresultbuf.toString()).wordpress_tokens;
-	    if(tokens) {
-		fs.writeFile(dbfilename, JSON.stringify({'wordpress_tokens': tokens}));
-		res.end(JSON.stringify({'oauth2': 'authorized'}));
+	delete req.headers['accept-encoding'];
+	wordpressrest.get_access_token(req, function(res, dbfilename, response) {
+	    if(response.statusCode != 200) {
+		res.writeHead(response.statusCode, response.headers);
+		response.pipe(res);
 	    }
 	    else {
-		res.end(apiresultbuf.toString());
+		var body = [];
+		response.on('data', function(chunk) {
+		    this.push(chunk);
+		}.bind(body));
+		response.on('end', function(res, body, dbfilename) {
+		    var tokens = JSON.parse(Buffer.concat(body).toString());
+		    if(this.wordpress_tokens) {
+			for(var k in tokens) {
+			    this.wordpress_tokens[k] = tokens[k]
+			}
+		    }
+		    else {
+			this.wordpress_tokens = tokens;
+		    }
+		    fs.writeFile(dbfilename, JSON.stringify({'wordpress_tokens': this.wordpress_tokens}));
+		    res.end(JSON.stringify({'oauth2': 'authorized'}));
+		}.bind(this, res, body, dbfilename));
 	    }
-	}.bind(this, res, apiresult));
-	wordpressrest.get_access_token(req, apiresult);
+	}.bind(wordpressrest, res, dbfilename));
     }
     else if(pathname.match("/wordpress")) {
 	if(!wordpressrest.wordpress_tokens) {
@@ -45,20 +57,15 @@ var server = http.createServer(function(req, res) {
 	    res.end();
 	}
 	else {
-	    pathname = pathname.substring(pathname.indexOf('/', 1));
-	    apiresult.pipe(res);
-	    if(req.method == 'POST') {
-		var data = new DuplexBufferStream();
-		req.pipe(data);
-		data.on('finish', function(data, req, apiresult, pathname) {
-		    options = querystring.parse(data.read().toString());
-		    wordpressrest.call_wordpress(req, apiresult, pathname, options);
-		}.bind(this, data, req, apiresult, pathname));
-	    }
-	    else {
-		options = url.parse(req.url, true).query;
-		wordpressrest.call_wordpress(req, apiresult, pathname, options);
-	    }
+	    var wurl = url.parse(req.url, true);
+	    wurl.pathname = pathname.substring(pathname.indexOf('/', 1));
+	    delete wurl.protocol;
+	    delete wurl.host;
+	    req.url = url.format(wurl);
+	    wordpressrest.call_wordpress(req, null, function(response){
+		this.writeHead(response.statusCode, response.headers);
+		response.pipe(this);
+	    }.bind(res));
 	}
     }
     else {
