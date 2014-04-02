@@ -9,7 +9,6 @@ var wordpressrest = new WordPressRest({'wordpress_tokens': wordpress_tokens});
 
 var server = http.createServer(function(req, res) {
     var pathname = url.parse(req.url).pathname;
-    var apiresult = new DuplexBufferStream();
 
     console.log(pathname);
 
