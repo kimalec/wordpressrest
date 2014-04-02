@@ -21,7 +21,10 @@ var server = http.createServer(function(req, res) {
     else if(pathname.match("/wordpress/authorized$")) {
 	delete req.headers['accept-encoding'];
 	wordpressrest.get_access_token(req, function(res, dbfilename, response) {
-	    if(response.statusCode != 200) {
+	    if(response.error) {
+		res.end(JSON.stringify(response));
+	    }
+	    else if(response.statusCode != 200) {
 		res.writeHead(response.statusCode, response.headers);
 		response.pipe(res);
 	    }
