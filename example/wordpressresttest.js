@@ -62,6 +62,7 @@ var server = http.createServer(function(req, res) {
 	    var wurl = url.parse(req.url, true);
 	    wurl.pathname = pathname.substring(pathname.indexOf('/', 1));
 	    delete wurl.protocol;
+	    delete wurl.hostname;
 	    delete wurl.host;
 	    req.url = url.format(wurl);
 	    wordpressrest.call_wordpress(req, null, function(response){
