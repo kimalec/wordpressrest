@@ -1,6 +1,6 @@
 {
   "name": "wordpressrest",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "wrapper around wordpress rest api",
   "main": "./lib/wordpressrest",
   "directories": {
